@@ -10,11 +10,13 @@ namespace SocialHubAPI.Controllers
     {
         private readonly RegisterUserUseCase _registerUserUseCase;
         private readonly LoginUserUseCase _loginUserUseCase;
+        private readonly TokenService _tokenService;
 
-        public AuthController(RegisterUserUseCase registerUserUseCase, LoginUserUseCase loginUserUseCase)
+        public AuthController(RegisterUserUseCase registerUserUseCase, LoginUserUseCase loginUserUseCase, TokenService tokenService)
         {
             _registerUserUseCase = registerUserUseCase;
             _loginUserUseCase = loginUserUseCase;
+            _tokenService = tokenService;
         }
 
         [HttpPost("register")]
@@ -22,7 +24,7 @@ namespace SocialHubAPI.Controllers
         {
             try
             {
-                await _registerUserUseCase.RegisterAsync(request.Username, request.Password);
+                await _registerUserUseCase.RegisterAsync(request.Email, request.Password);
                 return Ok("Usuário registrado com sucesso.");
             }
             catch (Exception ex)
@@ -37,11 +39,28 @@ namespace SocialHubAPI.Controllers
             try
             {
                 var user = await _loginUserUseCase.AuthenticateAsync(request.Username, request.Password);
-                return Ok(user);
+                if (user == null)
+                {
+                    return Unauthorized("Credenciais inválidas.");
+                }
+
+                // Gerar token JWT
+                var token = _tokenService.GenerateToken(user);
+
+                // Retornar o token e os dados do usuário
+                return Ok(new
+                {
+                    token,
+                    user = new
+                    {
+                        id = user.Id,
+                        email = user.Username,
+                    }
+                });
             }
-            catch (UnauthorizedAccessException)
+            catch (Exception ex)
             {
-                return Unauthorized("Credenciais inválidas.");
+                return BadRequest($"Erro ao realizar login: {ex.Message}");
             }
         }
     }

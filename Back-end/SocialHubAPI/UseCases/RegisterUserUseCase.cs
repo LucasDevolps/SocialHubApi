@@ -14,15 +14,21 @@ namespace SocialHubAPI.UseCases
 
         public async Task RegisterAsync(string username, string password)
         {
-            var existingUser = await _userRepository.GetByUsernameAsync(username);
-            if (existingUser != null)
+            // Verificar se o usuário já existe
+            var userExists = await _userRepository.FindByUsernameAsync(username);
+            if (userExists != null)
+            {
                 throw new Exception("Usuário já existe.");
+            }
 
-            var hashedPassword = HashPassword(password); // Use um método seguro para hashing
-            var user = new User(username, hashedPassword);
+            // Gerar o hash da senha
+            var passwordHash = HashPassword(password);
 
-            await _userRepository.AddAsync(user);
+            var newUser = new User(username, passwordHash);
+
+            await _userRepository.AddAsync(newUser);
         }
+
 
         private string HashPassword(string password)
         {

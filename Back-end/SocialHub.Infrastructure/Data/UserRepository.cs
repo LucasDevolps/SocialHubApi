@@ -12,7 +12,10 @@ namespace SocialHub.Infrastructure.Data
         {
             _context = context;
         }
-
+        public async Task<User> FindByUsernameAsync(string username)
+        {
+            return await _context.Set<User>().FirstOrDefaultAsync(u => u.Username == username);
+        }
         public async Task AddAsync(User user)
         {
             await _context.Users.AddAsync(user);
